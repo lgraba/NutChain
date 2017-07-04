@@ -10,6 +10,7 @@ import configparser
 import time
 import nutserver
 import transaction
+import pickle
 
 class NutChain:
 	"""NutChain: A super-sexy NutChain"""
@@ -41,6 +42,7 @@ class NutChain:
 			if (txs):
 				previous_nut = self.newNut(previous_nut, txs)
 				print(previous_nut)
+
 	# readconfig()
 	# Read a configuration file which represents the Genesis Nut
 	def readconfig(self):
@@ -63,32 +65,41 @@ class NutChain:
 	# configSectionMap()
 	# Break out each section from the configuration file (Genesis Nut) into a Dictionary
 	def configSectionMap(self, section):
-	    data = {}
-	    options = self.Config.options(section)
-	    for option in options:
-	        try:
-	            data[option] = self.Config.get(section, option)
-	            if data[option] == -1:
-	                DebugPrint("skip: %s" % option)
-	        except:
-	            print("exception on %s!" % option)
-	            data[option] = None
-	    return data
+		data = {}
+		options = self.Config.options(section)
+		for option in options:
+			try:
+				data[option] = self.Config.get(section, option)
+				if data[option] == -1:
+					DebugPrint("skip: %s" % option)
+			except:
+				print("exception on %s!" % option)
+				data[option] = None
+		return data
 
 	# configAccountMap()
 	# Break out the Accounts section from the configuration file (Genesis Nut) into a Dictionary
 	def configAccountMap(self, section):
-	    data = {}
-	    options = self.Config.options(section)
-	    for option in options:
-	        try:
-	            data[option] = float(self.Config.get(section, option))
-	            if data[option] == -1:
-	                DebugPrint("skip: %s" % option)
-	        except:
-	            print("exception on %s!" % option)
-	            data[option] = None
-	    return data
+		data = {}
+		options = self.Config.options(section)
+		for option in options:
+			try:
+				pair = self.Config.get(section, option)
+				strip_pair = pair.strip("{}")
+				split_pair = strip_pair.split(":")
+				name = split_pair[0].strip()
+				value = float(split_pair[1].strip())
+
+				data[option] = {name:value}
+
+				if data[option] == -1:
+					DebugPrint("skip: %s" % option)
+
+			except Exception as err:
+				print("exception on %s!" % option)
+				print(err)
+				data[option] = None
+		return data
 
 	# newNut()
 	# Create a new Nut with the given Transactions
