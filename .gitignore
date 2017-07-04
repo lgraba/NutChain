@@ -1,0 +1,5 @@
+*.log
+/log
+/testA/*
+/testB/*
+/__pycache__
