@@ -3,3 +3,6 @@
 /testA/*
 /testB/*
 /__pycache__
+/vendor
+/accounts
+

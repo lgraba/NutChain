@@ -40,7 +40,7 @@ class Transaction():
 
 
 			words = tx_part.split()
-			send_array = ['Give', 'give', 'Send', 'send', 'Swing', 'swing']
+			send_array = ['Give', 'give', 'Send', 'send', 'Shoot', 'shoot', 'Slide', 'slide']
 			from_array = ['From', 'from']
 
 			# Construct Transaction
