@@ -11,6 +11,7 @@ import time
 import nutserver
 import transaction
 import pickle
+import account
 
 class NutChain:
 	"""NutChain: A super-sexy NutChain"""
@@ -73,33 +74,35 @@ class NutChain:
 				if data[option] == -1:
 					DebugPrint("skip: %s" % option)
 			except:
-				print("exception on %s!" % option)
+				print("Header/Txs; exception on %s!" % option)
 				data[option] = None
 		return data
 
 	# configAccountMap()
-	# Break out the Accounts section from the configuration file (Genesis Nut) into a Dictionary
+	# Break out the Accounts section from the configuration file (Genesis Nut) into a NamedTuple
 	def configAccountMap(self, section):
-		data = {}
+		accounts = {}
 		options = self.Config.options(section)
 		for option in options:
 			try:
 				pair = self.Config.get(section, option)
-				strip_pair = pair.strip("{}")
-				split_pair = strip_pair.split(":")
+				strip_pair = pair.strip("()")
+				split_pair = strip_pair.split(",")
 				name = split_pair[0].strip()
 				value = float(split_pair[1].strip())
 
-				data[option] = {name:value}
+				# data[option] = account.Acc(name, value)
+				server_dict = {option:value}
+				accounts[option] = account.Account(name, False, server_dict)
 
-				if data[option] == -1:
+				if accounts[option] == -1:
 					DebugPrint("skip: %s" % option)
 
 			except Exception as err:
-				print("exception on %s!" % option)
+				print("Accounts; exception on %s!" % option)
 				print(err)
-				data[option] = None
-		return data
+				accounts[option] = None
+		return accounts
 
 	# newNut()
 	# Create a new Nut with the given Transactions
@@ -199,23 +202,50 @@ class NutChain:
 		amount = transaction.amount
 		receiver = transaction.receiver
 
+		# Balance each Account by publicKey or Name
+		inNotFound = True
+		outNotFound = True
+		for account in prev_accounts.items():
+			# Subtract Inputs from Accounts
+			if (account.publicKey == sender or account.name == sender):
+				# Make sure account has enough in it
+				if (account.amount < amount):
+					print("ERROR; Not enough in '" + sender + "' account to send " + str(amount) + " to " + receiver + "!")
+					return 'INSUFFICIENT_FUNDS_ya_broke_aamf'
+				else:
+					account.amount -= amount
+					notFound = False
+
+			# Add outputs to Previous Accounts and New Accounts
+			if (account.publicKey == receiver or account.name == receiver):
+				account.amount += amount
+				outNotFound = False
+
+		if (inNotFound):
+			print("Input Accounts not found: {}".format(sender))
+			return 'SENDING_ACCOUNT_DNE'
+
+		if (outNotFound):
+			print("Output Accounts not found: {}".format(receiver))
+			return 'SENDING_ACCOUNT_DNE'
+
 		# Subtract inputs from Previous Accounts
-		if sender in prev_accounts:
-			# Make sure account has enough in it
-			if (prev_accounts[sender] < amount):
-				print("ERROR; Not enough in '" + sender + "' account to send " + str(amount) + " to " + receiver + "!")
-				return 'INSUFFICIENT_FUNDS_ya_broke_aamf'
-			else:
-				prev_accounts[sender] -= amount
-		else:
-			print("ERROR; No '" + sender + "' account to pull " + str(amount) + " from to transfer to " + receiver + "!")
-			return 'ACCOUNT_DONT_EXIST'
-		# Add outputs to Previous Accounts and New Accounts
-		if receiver in prev_accounts:
-			prev_accounts[receiver] += amount
-		else:
-			prev_accounts[receiver] = amount
-			print("Created '" + receiver + "' account to receive " + str(amount) + " from " + sender + "!")
+		# if sender in prev_accounts:
+		# 	# Make sure account has enough in it
+		# 	if (prev_accounts[sender].amount < amount):
+		# 		print("ERROR; Not enough in '" + sender + "' account to send " + str(amount) + " to " + receiver + "!")
+		# 		return 'INSUFFICIENT_FUNDS_ya_broke_aamf'
+		# 	else:
+		# 		prev_accounts[sender] -= amount
+		# else:
+		# 	print("ERROR; No '" + sender + "' account to pull " + str(amount) + " from to transfer to " + receiver + "!")
+		# 	return 'ACCOUNT_DONT_EXIST'
+		# # Add outputs to Previous Accounts and New Accounts
+		# if receiver in prev_accounts:
+		# 	prev_accounts[receiver] += amount
+		# else:
+		# 	prev_accounts[receiver] = amount
+		# 	print("Created '" + receiver + "' account to receive " + str(amount) + " from " + sender + "!")
 
 		return False
 
